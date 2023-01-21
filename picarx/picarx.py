@@ -168,9 +168,9 @@ class Picarx(object):
             if abs_current_angle > 40:
                 abs_current_angle = 40
             power_scale = (100 - abs_current_angle) / 100.0
-            # print("power_scale:",power_scale)
+            print("power_scale:",power_scale)
             if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, 1*speed * power_scale)
+                self.set_motor_speed(1, speed * power_scale)
                 self.set_motor_speed(2, -speed) 
                 # print("current_speed: %s %s"%(1*speed * power_scale, -speed))
             else:
