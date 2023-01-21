@@ -9,11 +9,12 @@ except ImportError:
     from sim_robot_hat import Pin, PWM, Servo, Grayscale_Module, Ultrasonic, __reset_mcu__, reset_mcu
 import time
 import os
+import atexit
 import logging
-from logdecorator import log_on_start , log_on_end , log_on_error
-logging_format = "%( asctime)s: %( message)s"
-logging.basicConfig(format=logging_format , level=logging.INFO ,datefmt ="%H:%M:%S")
-logging.getLogger ().setLevel(logging.DEBUG)
+#from logdecorator import log_on_start , log_on_end , log_on_error
+#logging_format = "%( asctime)s: %( message)s"
+#logging.basicConfig(format=logging_format , level=logging.INFO)
+#logging.getLogger ().setLevel(logging.DEBUG)
 reset_mcu()
 time.sleep(0.2)
 
@@ -210,6 +211,7 @@ class Picarx(object):
 
 if __name__ == "__main__":
     px = Picarx()
+    atexit.register(px.stop)
     px.forward(50)
     time.sleep(1)
     px.stop()

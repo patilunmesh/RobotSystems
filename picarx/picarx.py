@@ -3,7 +3,7 @@ from robot_hat import Grayscale_Module, Ultrasonic
 from robot_hat.utils import reset_mcu
 import time
 import os
-
+import atexit
 reset_mcu()
 time.sleep(0.2)
 
@@ -200,6 +200,7 @@ class Picarx(object):
 
 if __name__ == "__main__":
     px = Picarx()
+    atexit.register(px.stop)
     px.forward(50)
     time.sleep(1)
     px.stop()
