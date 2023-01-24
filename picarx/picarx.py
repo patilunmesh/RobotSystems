@@ -19,7 +19,7 @@ class Picarx(object):
     PERIOD = 4095
     PRESCALER = 10
     TIMEOUT = 0.02
-
+    Rw = 0.05 # 5cm half of base width
     # servo_pins: direction_servo, camera_servo_1, camera_servo_2 
     # motor_pins: left_swicth, right_swicth, left_pwm, right_pwm
     # grayscale_pins: 3 adc channels
@@ -148,13 +148,13 @@ class Picarx(object):
             # if abs_current_angle >= 0:
             if abs_current_angle > 40:
                 abs_current_angle = 40
-            power_scale = (100 - abs_current_angle) / 100.0 
+            #power_scale = (100 - abs_current_angle) / 100.0 
             # print("power_scale:",power_scale)
             if (current_angle / abs_current_angle) > 0:
                 self.set_motor_speed(1, -1*speed)
-                self.set_motor_speed(2, speed * power_scale)
+                self.set_motor_speed(2, speed)
             else:
-                self.set_motor_speed(1, -1*speed * power_scale)
+                self.set_motor_speed(1, -1*speed)
                 self.set_motor_speed(2, speed )
         else:
             self.set_motor_speed(1, -1*speed)
@@ -181,6 +181,29 @@ class Picarx(object):
         else:
             self.set_motor_speed(1, speed)
             self.set_motor_speed(2, -1*speed)                  
+
+    def always_forward(self, speed):
+        current_angle = self.dir_current_angle
+        if current_angle != 0:
+            abs_current_angle = abs(current_angle)
+            # if abs_current_angle >= 0:
+            if abs_current_angle > 40:
+                abs_current_angle = 39
+            #power_scale = (100 - abs_current_angle) / 100.0
+            # abs of angle varies from 0 to 40 so scale is 0.6 to 1
+            #print("power_scale:",power_scale)
+            if (current_angle / abs_current_angle) > 0:
+                factor = abs(current_angle)*3.14/180 * self.Rw
+                self.set_motor_speed(1, speed+factor)
+                self.set_motor_speed(2, -speed+factor) 
+                # print("current_speed: %s %s"%(1*speed * power_scale, -speed))
+            else:
+                self.set_motor_speed(1, speed)
+                self.set_motor_speed(2, -1*speed)
+                # print("current_speed: %s %s"%(speed, -1*speed * power_scale))
+        else:
+            self.set_motor_speed(1, speed)
+            self.set_motor_speed(2, -1*speed)     
 
     def stop(self):
         self.set_motor_speed(1, 0)
