@@ -19,7 +19,7 @@ class Picarx(object):
     PERIOD = 4095
     PRESCALER = 10
     TIMEOUT = 0.02
-    Rw = 0.05 # 5cm half of base width
+    Rw = 50 # 50mm half of base width
     # servo_pins: direction_servo, camera_servo_1, camera_servo_2 
     # motor_pins: left_swicth, right_swicth, left_pwm, right_pwm
     # grayscale_pins: 3 adc channels
@@ -71,6 +71,7 @@ class Picarx(object):
 
     def set_motor_speed(self,motor,speed):
         # global cali_speed_value,cali_dir_value
+        print("call with", speed)
         motor -= 1
         if speed >= 0:
             direction = 1 * self.cali_dir_value[motor]
@@ -80,6 +81,7 @@ class Picarx(object):
         if speed != 0:
             speed = int(speed /2 ) + 50
         speed = speed - self.cali_speed_value[motor]
+        print(speed)
         if direction < 0:
             self.motor_direction_pins[motor].high()
             self.motor_speed_pins[motor].pulse_width_percent(speed)
@@ -193,7 +195,8 @@ class Picarx(object):
             # abs of angle varies from 0 to 40 so scale is 0.6 to 1
             #print("power_scale:",power_scale)
             if (current_angle / abs_current_angle) > 0:
-                factor = abs(current_angle)*3.14/180 * self.Rw
+                factor = abs(current_angle)*3.14/180 * self.Rw *(10.5 - abs(current_angle)/1.3)
+                print(factor, speed)
                 self.set_motor_speed(1, speed+factor)
                 self.set_motor_speed(2, -speed+factor) 
                 # print("current_speed: %s %s"%(1*speed * power_scale, -speed))
@@ -225,6 +228,8 @@ class Picarx(object):
 if __name__ == "__main__":
     px = Picarx()
     atexit.register(px.stop)
-    px.forward(50)
+    px.set_dir_servo_angle(7)
+    px.always_forward(50)
+    #px.forward(50)
     time.sleep(1)
     px.stop()
