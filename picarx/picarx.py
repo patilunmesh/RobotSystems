@@ -186,28 +186,30 @@ class Picarx(object):
 
     def always_forward(self, speed):
         current_angle = self.dir_current_angle
-        if current_angle != 0:
-            abs_current_angle = abs(current_angle)
-            # if abs_current_angle >= 0:
-            if abs_current_angle > 40:
-                abs_current_angle = 39
-            #power_scale = (100 - abs_current_angle) / 100.0
-            # abs of angle varies from 0 to 40 so scale is 0.6 to 1
-            #print("power_scale:",power_scale)
-            if (current_angle / abs_current_angle) > 0:
-                factor = abs(current_angle)*3.14/180 * self.Rw *(10.5 - abs(current_angle)/1.3)
-                print(factor, speed)
-                self.set_motor_speed(1, speed+factor)
-                self.set_motor_speed(2, -speed+factor) 
-                # print("current_speed: %s %s"%(1*speed * power_scale, -speed))
-            else:
-                self.set_motor_speed(1, speed)
-                self.set_motor_speed(2, -1*speed)
-                # print("current_speed: %s %s"%(speed, -1*speed * power_scale))
+        abs_current_angle = abs(current_angle)
+        if abs_current_angle > 40:  abs_current_angle = 39
+        factor = abs_current_angle * (3.14/180) * self.Rw *(10.5 - abs_current_angle/1.3)
+        print(factor, speed)
+        if current_angle >= 0:
+            self.set_motor_speed(1, speed+factor)
+            self.set_motor_speed(2, -speed+factor) 
         else:
-            self.set_motor_speed(1, speed)
-            self.set_motor_speed(2, -1*speed)     
+            self.set_motor_speed(1, speed-factor)
+            self.set_motor_speed(2, -1*(speed+factor))
 
+    def always_backward(self, speed):
+        current_angle = self.dir_current_angle
+        abs_current_angle = abs(current_angle)
+        if abs_current_angle > 40:  abs_current_angle = 39
+        factor = abs_current_angle * (3.14/180) * self.Rw *(10.5 - abs_current_angle/1.3)
+        print(factor, speed)
+        if current_angle >= 0:
+            self.set_motor_speed(2, speed+factor)
+            self.set_motor_speed(1, -speed+factor) 
+        else:
+            self.set_motor_speed(2, speed-factor)
+            self.set_motor_speed(1, -1*(speed+factor))
+            
     def stop(self):
         self.set_motor_speed(1, 0)
         self.set_motor_speed(2, 0)
@@ -228,7 +230,7 @@ class Picarx(object):
 if __name__ == "__main__":
     px = Picarx()
     atexit.register(px.stop)
-    px.set_dir_servo_angle(7)
+    px.set_dir_servo_angle(2)
     px.always_forward(50)
     #px.forward(50)
     time.sleep(1)
