@@ -1,10 +1,10 @@
 #!/usr/bin/python3
 
-from picarx_improved import Picarx
+from picarx import Picarx
 import time
 
 def delay(t):
-	t = t/500
+	t = t/1000
 	time.sleep(t)
 
 class Manuver():
@@ -17,6 +17,7 @@ class Manuver():
 	def delay_stop(self):
 		delay(1000)
 		self.picar.stop()
+		self.picar.set_dir_servo_angle(0)
 
 	def Moveit(self, order = "forward"):
 		if order == "forward":
