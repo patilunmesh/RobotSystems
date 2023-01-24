@@ -25,12 +25,11 @@ UserHome = os.popen('getent passwd %s | cut -d: -f 6'%User).readline().strip()
 # print(UserHome) # /home/pi
 #config_file = '%s/.config/picar-x/picar-x.conf'%UserHome
 
-
 class Picarx(object):
     PERIOD = 4095
     PRESCALER = 10
     TIMEOUT = 0.02
-
+    Rw = 50 # 50mm half of base width
     # servo_pins: direction_servo, camera_servo_1, camera_servo_2 
     # motor_pins: left_swicth, right_swicth, left_pwm, right_pwm
     # grayscale_pins: 3 adc channels
@@ -82,21 +81,23 @@ class Picarx(object):
 
     def set_motor_speed(self,motor,speed):
         # global cali_speed_value,cali_dir_value
+        print("call with", speed)
         motor -= 1
         if speed >= 0:
-            direction = 1 * 1#self.cali_dir_value[motor]
+            direction = 1 #* self.cali_dir_value[motor]
         elif speed < 0:
-            direction = -1 * 1#self.cali_dir_value[motor]
+            direction = -1 #* self.cali_dir_value[motor]
         speed = abs(speed)
         if speed != 0:
             speed = int(speed /2 ) + 50
         speed = speed - self.cali_speed_value[motor]
-        if direction < 0:
-            self.motor_direction_pins[motor].high()
-            self.motor_speed_pins[motor].pulse_width_percent(speed)
-        else:
-            self.motor_direction_pins[motor].low()
-            self.motor_speed_pins[motor].pulse_width_percent(speed)
+        print(speed)
+        # if direction < 0:
+        #     self.motor_direction_pins[motor].high()
+        #     self.motor_speed_pins[motor].pulse_width_percent(speed)
+        # else:
+        #     self.motor_direction_pins[motor].low()
+        #     self.motor_speed_pins[motor].pulse_width_percent(speed)
 
     def motor_speed_calibration(self,value):
         # global cali_speed_value,cali_dir_value
@@ -159,13 +160,13 @@ class Picarx(object):
             # if abs_current_angle >= 0:
             if abs_current_angle > 40:
                 abs_current_angle = 40
-            power_scale = (100 - abs_current_angle) / 100.0 
+            #power_scale = (100 - abs_current_angle) / 100.0 
             # print("power_scale:",power_scale)
             if (current_angle / abs_current_angle) > 0:
                 self.set_motor_speed(1, -1*speed)
-                self.set_motor_speed(2, speed * power_scale)
+                self.set_motor_speed(2, speed)
             else:
-                self.set_motor_speed(1, -1*speed * power_scale)
+                self.set_motor_speed(1, -1*speed)
                 self.set_motor_speed(2, speed )
         else:
             self.set_motor_speed(1, -1*speed)
@@ -177,21 +178,48 @@ class Picarx(object):
             abs_current_angle = abs(current_angle)
             # if abs_current_angle >= 0:
             if abs_current_angle > 40:
-                abs_current_angle = 40
-            power_scale = (100 - abs_current_angle) / 100.0
-            # print("power_scale:",power_scale)
+                abs_current_angle = 39
+            #power_scale = (100 - abs_current_angle) / 100.0
+            # abs of angle varies from 0 to 40 so scale is 0.6 to 1
+            #print("power_scale:",power_scale)
             if (current_angle / abs_current_angle) > 0:
-                self.set_motor_speed(1, 1*speed * power_scale)
+                self.set_motor_speed(1, speed)
                 self.set_motor_speed(2, -speed) 
                 # print("current_speed: %s %s"%(1*speed * power_scale, -speed))
             else:
                 self.set_motor_speed(1, speed)
-                self.set_motor_speed(2, -1*speed * power_scale)
+                self.set_motor_speed(2, -1*speed)
                 # print("current_speed: %s %s"%(speed, -1*speed * power_scale))
         else:
             self.set_motor_speed(1, speed)
             self.set_motor_speed(2, -1*speed)                  
 
+    def always_forward(self, speed):
+        current_angle = self.dir_current_angle
+        abs_current_angle = abs(current_angle)
+        if abs_current_angle > 40:  abs_current_angle = 39
+        factor = abs_current_angle * (3.14/180) * self.Rw *(10.5 - abs_current_angle/1.3)
+        print(factor, speed)
+        if current_angle >= 0:
+            self.set_motor_speed(1, speed+factor)
+            self.set_motor_speed(2, -speed+factor) 
+        else:
+            self.set_motor_speed(1, speed-factor)
+            self.set_motor_speed(2, -1*(speed+factor))
+
+    def always_backward(self, speed):
+        current_angle = self.dir_current_angle
+        abs_current_angle = abs(current_angle)
+        if abs_current_angle > 40:  abs_current_angle = 39
+        factor = abs_current_angle * (3.14/180) * self.Rw *(10.5 - abs_current_angle/1.3)
+        print(factor, speed)
+        if current_angle >= 0:
+            self.set_motor_speed(2, speed+factor)
+            self.set_motor_speed(1, -speed+factor) 
+        else:
+            self.set_motor_speed(2, speed-factor)
+            self.set_motor_speed(1, -1*(speed+factor))
+            
     def stop(self):
         self.set_motor_speed(1, 0)
         self.set_motor_speed(2, 0)
@@ -212,6 +240,9 @@ class Picarx(object):
 if __name__ == "__main__":
     px = Picarx()
     atexit.register(px.stop)
-    px.forward(50)
+    px.set_dir_servo_angle(2)
+    px.always_forward(50)
+    #px.forward(50)
     time.sleep(1)
     px.stop()
+

@@ -1,13 +1,18 @@
 #!/usr/bin/python3
 
-from picarx import Picarx
+from picarx_improved import Picarx
+import time
+
+def delay(t):
+	t = t/500
+	time.sleep(t)
 
 class Manuver():
 	def __init__(self):
 		self.picar = Picarx()
 
 	def emergency_stop(self):
-		picar.stop()
+		self.picar.stop()
 
 	def delay_stop(self):
 		delay(1000)
@@ -57,7 +62,7 @@ class Manuver():
 			self.picar.set_dir_servo_angle(-30)
 			self.delay_stop()
 
-	def kturning(self, order=left):
+	def kturning(self, order="left"):
 		if order == "left":
 			self.Moveit("forward left")
 
@@ -70,7 +75,7 @@ class Manuver():
 			delay(1000)
 			self.picar.set_dir_servo_angle(0)
 			self.delay_stop()
-			
+
 		elif order == "right":
 			self.Moveit("forward right")
 
@@ -89,38 +94,35 @@ if __name__ == "__main__":
 	actions = ["forward right", "backward right", "forward left", "backward left","forward", "backward"]
 	dirs = ["left", "right"]
 	while True:
-        usr_input = int(input(
-            "Choose maneuver: \n1] move in direction \n2] park in direction \n3] k-turn \n4] stop \n5] exit \n"))
-        manuver.emergency_stop()
+		usr_input = int(input("Choose maneuver: \n1] move in direction \n2] park in direction \n3] k-turn \n4] stop \n5] exit \n"))
+		manuver.emergency_stop()
+		if usr_input == 1:
+			print("choose: forward right, backward right, forward left, backward left, forward")
+			inp = input("direction to move: ")
+			if inp in actions:
+				manuver.Moveit(inp)
+			else:
+				continue
 
-        if usr_input == 1:
-        	print("choose: forward right, backward right, forward left, backward left, forward")
-            inp = input("direction to move: ")
-            if inp in actions:
-            	manuver.Moveit(inp)
-            else:
-            	continue
+		elif usr_input == 2:
+			inp = input("Parallel park left or right:")
+			if inp in dirs:
+				manuver.parallel_park(inp)
+			else:
+				continue
 
-        elif usr_input == 2:
-            inp = input("Parallel park left or right:")
-            if inp in dirs:
-            	manuver.parallel_park(inp)
-            else:
-            	continue
+		elif usr_input == 3:
+			inp = input("k-turning left or right: ")
+			if inp in dirs:
+				manuver.kturning(inp)
+			else:
+				continue
 
-        elif usr_input == 3:
-            inp = input("k-turning left or right: ")
-            if inp in dirs:
-            	manuver.kturning(inp)
-            else:
-            	continue
+		elif usr_input == 4:
+			manuver.emergency_stop()
 
-        elif usr_input == 4:
-            manuver.emergency_stop()
-
-        elif usr_input == 5:
-            manuver.emergency_stop()
-            break
-
-        else:
-            print("Choose an action...: ")
+		elif usr_input == 5:
+			manuver.emergency_stop()
+			break
+		else:
+			print("Choose an action...: ")
