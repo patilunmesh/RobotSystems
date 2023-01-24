@@ -1,9 +1,7 @@
 try:
-    from robot_hat import Pin, PWM, Servo
+    from robot_hat import Pin, PWM, Servo, fileDB
     from robot_hat import Grayscale_Module, Ultrasonic
     from robot_hat.utils import reset_mcu
-    from robot_hat import *
-    from robot_hat import __reset_mcu__
 except ImportError:
     print ("sim functions need to be used")
     from sim_robot_hat import Pin, PWM, Servo, Grayscale_Module, Ultrasonic, __reset_mcu__, reset_mcu
