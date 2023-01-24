@@ -11,7 +11,7 @@ class Manuver():
 
 	def delay_stop(self):
 		delay(1000)
-        self.picar.stop()
+		self.picar.stop()
 
 	def Moveit(self, order = "forward"):
 		if order == "forward":
