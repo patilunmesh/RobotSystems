@@ -9,6 +9,7 @@ import time
 import os
 import atexit
 import logging
+from logdecorator import log_on_start , log_on_end , log_on_error
 #from logdecorator import log_on_start , log_on_end , log_on_error
 #logging_format = "%( asctime)s: %( message)s"
 #logging.basicConfig(format=logging_format , level=logging.INFO)
@@ -33,6 +34,7 @@ class Picarx(object):
     # grayscale_pins: 3 adc channels
     # ultrasonic_pins: tring, echo
     # config: path of config file
+    @log_on_start(logging.DEBUG , "Starting the system")
     def __init__(self, 
                 servo_pins:list=['P0', 'P1', 'P2'], 
                 motor_pins:list=['D4', 'D5', 'P12', 'P13'],
@@ -76,7 +78,7 @@ class Picarx(object):
         tring, echo= ultrasonic_pins
         self.ultrasonic = Ultrasonic(Pin(tring), Pin(echo))
         
-
+    @log_on_end(logging.DEBUG , "setting motor speed to {speed}")
     def set_motor_speed(self,motor,speed):
         # global cali_speed_value,cali_dir_value
         print("call with", speed)
@@ -89,13 +91,12 @@ class Picarx(object):
         if speed != 0:
             speed = int(speed /2 ) + 50
         speed = speed - self.cali_speed_value[motor]
-        print(speed)
-        # if direction < 0:
-        #     self.motor_direction_pins[motor].high()
-        #     self.motor_speed_pins[motor].pulse_width_percent(speed)
-        # else:
-        #     self.motor_direction_pins[motor].low()
-        #     self.motor_speed_pins[motor].pulse_width_percent(speed)
+        if direction < 0:
+            self.motor_direction_pins[motor].high()
+            self.motor_speed_pins[motor].pulse_width_percent(speed)
+        else:
+            self.motor_direction_pins[motor].low()
+            self.motor_speed_pins[motor].pulse_width_percent(speed)
 
     def motor_speed_calibration(self,value):
         # global cali_speed_value,cali_dir_value
