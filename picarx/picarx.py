@@ -62,7 +62,7 @@ class Picarx(object):
         # grayscale module init
         # usage: self.grayscale.get_grayscale_data()
         adc0, adc1, adc2 = grayscale_pins
-        self.grayscale = Grayscale_Module(adc0, adc1, adc2, reference=1000)
+        self.grayscale = Grayscale_Module(adc0, adc1, adc2, reference=15000)
         # ultrasonic init
         # usage: distance = self.ultrasonic.read()
         tring, echo= ultrasonic_pins
