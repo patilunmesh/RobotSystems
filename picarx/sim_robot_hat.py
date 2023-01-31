@@ -253,8 +253,8 @@ class Pin(_Basic_class):
         "D9":  6,
         "D10": 12,
         "D11": 13,
-        "D12": 19,
-        "D13": 16,
+        "P12": 19,
+        "P13": 16,
         "D14": 26,
         "D15": 20,
         "D16": 21,
@@ -269,14 +269,14 @@ class Pin(_Basic_class):
 
     _dict_2 = {
         "D0":  17,
-        "D1":   4,  # Changed
+        "D1":   4, 
         "D2":  27,
         "D3":  22,
         "D4":  23,
         "D5":  24,
-        "D6":  25,  # Removed
-        "D7":   4,  # Removed
-        "D8":   5,  # Removed
+        "D6":  25,  
+        "D7":   4,  
+        "D8":   5,  
         "D9":   6,
         "D10": 12,
         "D11": 13,
@@ -285,13 +285,13 @@ class Pin(_Basic_class):
         "D14": 26,
         "D15": 20,
         "D16": 21,
-        "SW":  25,  # Changed
+        "SW":  25, 
         "LED": 26,
         "BOARD_TYPE": 12,
         "RST": 16,
         "BLEINT": 13,
         "BLERST": 20,
-        "MCURST":  5,  # Changed
+        "MCURST":  5, 
     }
 
     def __init__(self, *value):
