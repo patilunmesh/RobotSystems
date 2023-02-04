@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import math
 import datetime
+import time
 import sys
 from picamera.array import PiRGBArray
 from picamera import PiCamera
@@ -22,9 +23,9 @@ class HandCodedLaneFollower(object):
         show_image("orig", frame)
 
         lane_lines, frame = detect_lane(frame)
-        final_frame = self.steer(frame, lane_lines)
+        #final_frame = self.steer(frame, lane_lines)
 
-        return final_frame
+        return frame
 
     def steer(self, frame, lane_lines):
         logging.debug('steering...')
@@ -63,22 +64,22 @@ def detect_lane(frame):
     lane_lines_image = display_lines(frame, lane_lines)
     show_image("lane lines", lane_lines_image)
 
-    return lane_lines, lane_lines_image
+    return lane_lines, edges
 
 
 def detect_edges(frame):
     # filter for blue lane lines
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     show_image("hsv", hsv)
-    lower_blue = np.array([30, 40, 0])
-    upper_blue = np.array([150, 255, 255])
+    lower_blue = np.array([85, 210, 60])
+    upper_blue = np.array([110, 255, 170])
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
     show_image("blue mask", mask)
 
     # detect edges
-    edges = cv2.Canny(mask, 200, 400)
+    edges = cv2.Canny(hsv, 250, 300)
 
-    return edges
+    return mask
 
 def detect_edges_old(frame):
     # filter for blue lane lines
@@ -301,9 +302,9 @@ def make_points(frame, line):
 ############################
 # Test Functions
 ############################
-def test_photo(file):
+def test_photo(frame):
     land_follower = HandCodedLaneFollower()
-    frame = cv2.imread(file)
+    #frame = cv2.imread(file)
     combo_image = land_follower.follow_lane(frame)
     show_image('final', combo_image, True)
     cv2.waitKey(0)
@@ -354,8 +355,8 @@ if __name__ == '__main__':
         for frame in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):# use_video_port=True
             img = frame.array
             #img,img_2,img_3 =  color_detect(img,'red')  # Color detection function
-            #img2 = test_photo(img)
-            cv2.imshow("video", img)    # OpenCV image show
+            img2 = test_photo(img)
+            cv2.imshow("video", img2)    # OpenCV image show
             # cv2.imshow("mask", img_2)    # OpenCV image show
             # cv2.imshow("morphologyEx_img", img_3)    # OpenCV image show
             rawCapture.truncate(0)   # Release cache
