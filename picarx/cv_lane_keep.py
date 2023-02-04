@@ -7,7 +7,7 @@ import time
 import sys
 from picamera.array import PiRGBArray
 from picamera import PiCamera
-
+from picarx import Picarx
 _SHOW_IMAGE = False
 
 
@@ -23,9 +23,9 @@ class HandCodedLaneFollower(object):
         show_image("orig", frame)
 
         lane_lines, frame = detect_lane(frame)
-        #final_frame = self.steer(frame, lane_lines)
+        final_frame = self.steer(frame, lane_lines)
 
-        return frame
+        return final_frame, self.curr_steering_angle
 
     def steer(self, frame, lane_lines):
         logging.debug('steering...')
@@ -53,7 +53,7 @@ def detect_lane(frame):
     edges = detect_edges(frame)
     #show_image('edges', edges)
 
-    cropped_edges = region_of_interest(edges)
+    cropped_edges = edges #region_of_interest(edges)
     show_image('edges cropped', cropped_edges)
 
     line_segments = detect_line_segments(cropped_edges)
@@ -64,7 +64,7 @@ def detect_lane(frame):
     lane_lines_image = display_lines(frame, lane_lines)
     show_image("lane lines", lane_lines_image)
 
-    return lane_lines, edges
+    return lane_lines, lane_lines_image
 
 
 def detect_edges(frame):
@@ -278,10 +278,12 @@ def make_points(frame, line):
 def test_photo(frame):
     land_follower = HandCodedLaneFollower()
     #frame = cv2.imread(file)
-    combo_image = land_follower.follow_lane(frame)
-    show_image('final', combo_image, True)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    combo_image, angle = land_follower.follow_lane(frame)
+    print(90-angle)
+    return 90-angle
+    #show_image('final', combo_image, True)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
 
 
 def test_video(video_file):
@@ -318,6 +320,7 @@ def test_video(video_file):
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
+    picar = Picarx()
     with PiCamera() as camera:
         print("start lane detect")
         camera.resolution = (640,480)
@@ -328,8 +331,10 @@ if __name__ == '__main__':
         for frame in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):# use_video_port=True
             img = frame.array
             #img,img_2,img_3 =  color_detect(img,'red')  # Color detection function
-            img2 = test_photo(img)
-            cv2.imshow("video", img2)    # OpenCV image show
+            angle = test_photo(img)
+            print(angle)
+            picar.set_dir_servo_angle(angle)
+            #cv2.imshow("video", img2)    # OpenCV image show
             # cv2.imshow("mask", img_2)    # OpenCV image show
             # cv2.imshow("morphologyEx_img", img_3)    # OpenCV image show
             rawCapture.truncate(0)   # Release cache
