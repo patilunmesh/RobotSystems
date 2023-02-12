@@ -10,12 +10,12 @@ except ImportError:
 
 class Ultrsonic:
     
-    def __init__(self, picar,
+    def __init__(self,
                  pin1: Pin,
                  pin2: Pin,
                  threshold) -> None:
 
-        self.car = picar
+        self.car = Picarx()
         self.pin1 = pin1
         self.pin2 = pin2
         self.threshold = threshold

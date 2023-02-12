@@ -18,7 +18,7 @@ except ImportError:
 
 SensorOutput = np.array
 
-class Sensor:
+class CamSensor:
     def __init__(self):
         self.cam = PiCamera()
         self.out = np.empty(
@@ -38,7 +38,7 @@ class Sensor:
         self.cam.capture(self.out, "bgr")
         return self.out
 
-class Interpreter:
+class CamInterpreter:
 
     def __init__(self) -> None:
         self.stop_now = False
@@ -172,12 +172,12 @@ class Interpreter:
 
 
 
-class Controller:
+class CamController:
 
-    def __init__(self, car, scale: float = 1.0) -> None:
+    def __init__(self, scale: float = 1.0) -> None:
         self.car = Picarx()
         self.scale = 1.3
-        self.interpreter = Interpreter()
+        self.interpreter = CamInterpreter()
 
     def update(self, bus: DataBus, event: threading.Event):
         while not event.is_set() or not bus.length() == 0:

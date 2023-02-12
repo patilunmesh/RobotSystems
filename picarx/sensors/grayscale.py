@@ -15,14 +15,19 @@ except ImportError:
 SensorOutput = List[int]
 
 
-class Sensor:
-    def __init__(self, adc_channels, bus: DataBus) -> None:
-        self.channels = [ADC(channel) for channel in adc_channels]
+class GSSensor:
+    def __init__(self, bus: DataBus) -> None:
+        self.chn_0 = ADC('A0')
+        self.chn_1 = ADC('A1')
+        self.chn_2 = ADC('A2')
         self.bus = bus
 
     def read(self) -> SensorOutput:
-        sensor_values = [adc.read() for adc in self.channels]
-        self.bus.write({'adc': sensor_values})
+        adc_value_list = []
+        adc_value_list.append(self.chn_0.read())
+        adc_value_list.append(self.chn_1.read())
+        adc_value_list.append(self.chn_2.read())
+        self.bus.write({'adc': adc_value_list})
         print("Grayscale::sensor read")
         return sensor_values
 
@@ -32,7 +37,7 @@ class Polarity(IntEnum):
     Light = +1
 
 
-class Interpreter:
+class GSInterpreter:
 
     def __init__(self,
                  sensitivity: float = 1e-0,
@@ -48,12 +53,12 @@ class Interpreter:
         return np.clip(np.mean(diff) * self.sensitivity, -1, 1)
 
 
-class Controller:
+class GSController:
 
     def __init__(self, bus: DataBus, scale: float = 1.0, *args, **kwargs) -> None:
         self.bus = bus
         self.car = Picarx()
-        self.interpreter = Interpreter(*args, **kwargs)
+        self.interpreter = GSInterpreter(*args, **kwargs)
 
     def update(self):
         values = self.bus.read()['adc']
