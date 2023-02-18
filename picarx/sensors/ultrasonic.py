@@ -1,6 +1,6 @@
 import sys
 try:
-    sys.path.append('/home/hlab/RobotSystems/picarx')
+    sys.path.append('..')
     from picarx import Picarx
     from robot_hat import *
 except ImportError:
