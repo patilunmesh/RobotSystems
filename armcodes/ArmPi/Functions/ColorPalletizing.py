@@ -34,7 +34,7 @@ def setTargetColor(target_color):
     __target_color = target_color
     return (True, ())
 
-# 找出面积最大的轮廓
+# Find the contour with the largest area
 # 参数为要比较的轮廓的列表
 def getAreaMaxContour(contours):
     contour_area_temp = 0
