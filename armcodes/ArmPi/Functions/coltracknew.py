@@ -11,10 +11,15 @@ from ArmIK.Transform import *
 from ArmIK.ArmMoveIK import *
 import HiwonderSDK.Board as Board
 from CameraCalibration.CalibrationConfig import *
+print("done imports")
 
-if sys.version_info.major == 2:
-    print('Please run this program with python3!')
-    sys.exit(0)
+
+
+#############################global  vars
+
+t1 = 0
+roi = ()
+last_x, last_y = 0, 0
 
 AK = ArmIK()
 
@@ -27,6 +32,28 @@ range_rgb = {
 }
 
 __target_color = ('red',)
+# The angle at which the gripper closes when gripping
+servo1 = 500
+count = 0
+track = False
+_stop = False
+get_roi = False
+center_list = []
+first_move = True
+__isRunning = False
+detect_color = 'None'
+action_finish = True
+start_pick_up = False
+start_count_t1 = True
+
+rect = None
+size = (640, 480)
+rotation_angle = 0
+unreachable = False
+world_X, world_Y = 0, 0
+world_x, world_y = 0, 0
+###################################
+
 # Set detection color
 def setTargetColor(target_color):
     global __target_color
@@ -51,11 +78,11 @@ def getAreaMaxContour(contours):
 
     return area_max_contour, contour_area_max  # 返回最大的轮廓
 
-# The angle at which the gripper closes when gripping
-servo1 = 500
+
 
 # initial position
 def initMove():
+    print("init move")
     Board.setBusServoPulse(1, servo1 - 50, 300)
     Board.setBusServoPulse(2, 500, 500)
     AK.setPitchRangeMoving((0, 10, 10), -30, -30, -90, 1500)
@@ -85,17 +112,7 @@ def set_rgb(color):
         Board.RGB.setPixelColor(1, Board.PixelColor(0, 0, 0))
         Board.RGB.show()
 
-count = 0
-track = False
-_stop = False
-get_roi = False
-center_list = []
-first_move = True
-__isRunning = False
-detect_color = 'None'
-action_finish = True
-start_pick_up = False
-start_count_t1 = True
+
 # variable reset
 def reset():
     global count
@@ -151,12 +168,7 @@ def exit():
     __isRunning = False
     print("ColorTracking Exit")
 
-rect = None
-size = (640, 480)
-rotation_angle = 0
-unreachable = False
-world_X, world_Y = 0, 0
-world_x, world_y = 0, 0
+
 # Robotic arm moves thread
 def move():
     global rect
@@ -172,7 +184,7 @@ def move():
     global world_x, world_y
     global center_list, count
     global start_pick_up, first_move
-
+    print("calling move")
     # Place coordinates (x, y, z) of wooden blocks of different colors
     coordinate = {
         'red':   (-15 + 0.5, 12 - 0.5, 1.5),
@@ -281,14 +293,7 @@ def move():
                 time.sleep(1.5)
             time.sleep(0.01)
 
-# run child thread
-th = threading.Thread(target=move)
-th.setDaemon(True)
-th.start()
 
-t1 = 0
-roi = ()
-last_x, last_y = 0, 0
 def run(img):
     global roi
     global rect
@@ -323,7 +328,7 @@ def run(img):
         frame_gb = getMaskROI(frame_gb, roi, size)    
     
     frame_lab = cv2.cvtColor(frame_gb, cv2.COLOR_BGR2LAB)  # Convert image to LAB space
-    
+    print("converted frame")
     area_max = 0
     areaMaxContour = 0
     if not start_pick_up:
@@ -338,7 +343,7 @@ def run(img):
         if area_max > 2500:  # have found the largest area
             rect = cv2.minAreaRect(areaMaxContour)
             box = np.int0(cv2.boxPoints(rect))
-
+            print("found box")
             roi = getROI(box) #Get roi area
             get_roi = True
 
@@ -352,10 +357,11 @@ def run(img):
             distance = math.sqrt(pow(world_x - last_x, 2) + pow(world_y - last_y, 2)) #Compare the last coordinates to determine whether to move
             last_x, last_y = world_x, world_y
             track = True
-            #print(count,distance)
+            print(count,distance)
             # Cumulative judgment
             if action_finish:
                 if distance < 0.3:
+                    print("less dis")
                     center_list.extend((world_x, world_y))
                     count += 1
                     if start_count_t1:
@@ -369,13 +375,21 @@ def run(img):
                         center_list = []
                         start_pick_up = True
                 else:
+                    print("else dis")
                     t1 = time.time()
                     start_count_t1 = True
                     count = 0
                     center_list = []
+    print("returning")
     return img
 
 if __name__ == '__main__':
+    print("just start")
+    # run child thread
+    print("setting thread")
+    th = threading.Thread(target=move)
+    th.setDaemon(True)
+    th.start()
     init()
     start()
     __target_color = ('red', )
