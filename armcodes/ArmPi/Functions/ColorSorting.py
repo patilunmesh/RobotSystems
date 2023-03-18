@@ -13,35 +13,36 @@ import HiwonderSDK.Board as Board
 from CameraCalibration.CalibrationConfig import *
 import RPi.GPIO as GPIO
 import time
+import math
 def Sonar():
-    while(True):
-        GPIO.setmode(GPIO.BCM)
-        pinTrigger = 22
-        pinEcho = 24
+    GPIO.setmode(GPIO.BCM)
+    pinTrigger = 22
+    pinEcho = 24
 
-        print("starting")
- 
-        GPIO.setup(pinTrigger, GPIO.OUT)
-        GPIO.setup(pinEcho, GPIO.IN)
-        GPIO.output(pinTrigger, False)
-        print("settup")
-        time.sleep(2)
- 
-        GPIO.output(pinTrigger, True)
-        time.sleep(0.00001)
-        GPIO.output(pinTrigger, False)
- 
+    print("starting")
 
-        while GPIO.input(pinEcho)==0:
-          pulseStartTime = time.time()
-        while GPIO.input(pinEcho)==1:
-            pulseEndTime = time.time()
- 
-        pulseDuration = pulseEndTime - pulseStartTime
-        distance = round(pulseDuration * 17150, 2)
-     
-        print("Distance: %.2f cm" % (distance))
-        GPIO.cleanup()
+    GPIO.setup(pinTrigger, GPIO.OUT)
+    GPIO.setup(pinEcho, GPIO.IN)
+    GPIO.output(pinTrigger, False)
+    print("settup")
+    time.sleep(2)
+
+    GPIO.output(pinTrigger, True)
+    time.sleep(0.00001)
+    GPIO.output(pinTrigger, False)
+
+
+    while GPIO.input(pinEcho)==0:
+        pulseStartTime = time.time()
+    while GPIO.input(pinEcho)==1:
+        pulseEndTime = time.time()
+
+    pulseDuration = pulseEndTime - pulseStartTime
+    distance = round(pulseDuration * 17150, 2)
+    
+    print("Distance: %.2f cm" % (distance))
+    GPIO.cleanup()
+    return distance
         
 
 
@@ -227,6 +228,30 @@ def move():
                     Board.setBusServoPulse(2, 500, 500)
                     AK.setPitchRangeMoving((world_X, world_Y, 12), -90, -90, 0, 1000)  #机械臂抬起
                     time.sleep(1)
+
+                    distance = Sonar()
+                    if distance > 8:
+                        print("grasp failed")
+                        Board.setBusServoPulse(2, servo2_angle + 90, 500)
+                        time.sleep(0.5)
+                        print("attempting second grasp with 90 degree")
+                        if not __isRunning:
+                            continue
+                        AK.setPitchRangeMoving((world_X, world_Y, 1.5), -90, -90, 0, 1000)
+                        time.sleep(1.5)
+
+                        if not __isRunning:
+                            continue
+                        Board.setBusServoPulse(1, servo1, 500)  #夹持器闭合
+                        time.sleep(0.8)
+
+                        if not __isRunning:
+                            continue
+                        Board.setBusServoPulse(2, 500, 500)
+                        AK.setPitchRangeMoving((world_X, world_Y, 12), -90, -90, 0, 1000)  #机械臂抬起
+                        time.sleep(1)
+
+
 
                     if not __isRunning:
                         continue
