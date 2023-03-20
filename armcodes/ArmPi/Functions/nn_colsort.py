@@ -15,9 +15,6 @@ import HiwonderSDK.Board as Board
 from CameraCalibration.CalibrationConfig import *
 import atexit
 
-import concurrent.futures
-from readerwriterlock import rwlock
-
 #Global setup
 coordinate = {
     'red':   (-15 + 0.5, 12 - 0.5, 1.5),
@@ -29,8 +26,7 @@ chosenColor = 'None'
 roia = False 
 start = False
 z_r = coordinate['red'][2]
-
-
+start_pick_up = False
 class ColorSensing():
 
     def __init__(self):
@@ -40,9 +36,9 @@ class ColorSensing():
         self.t1 = 0
         #Camera setup
         self.my_camera = Camera.Camera()
-        self.second_camera = Camera.Camera()
-        self.my_camera.camera_open(2)
-        self.second_camera.camera_open(0)
+        #self.second_camera = Camera.Camera()
+        self.my_camera.camera_open()
+        #self.second_camera.camera_open(0)
         atexit.register(self.cleanup)
         
         #Size of camera view
@@ -65,7 +61,7 @@ class ColorSensing():
     
     def processImage(self, img):
         global roia 
-        global start
+        global start, start_pick_up
         
         img_copy = img.copy()
         img_h, img_w = img.shape[:2]
@@ -76,6 +72,7 @@ class ColorSensing():
         #If a recognized object is detected in an area, the area is detected until there is no
         self.get_roi = roia
         start_pickup = start
+        print(" on 76 start", start_pickup)
         if self.get_roi and not start_pickup:
             self.get_roi = False
             roia = self.get_roi
@@ -110,7 +107,8 @@ class ColorSensing():
     
     
     def getLocation(self, areaMaxContour_max, max_area, img):
-        if max_area > 2500:  # Have found the largest area
+        global start
+        if max_area > 2500 and not start:  # Have found the largest area
             self.rect = cv2.minAreaRect(areaMaxContour_max)
             box = np.int0(cv2.boxPoints(self.rect))
             roi = getROI(box) #Get roi area
@@ -142,6 +140,7 @@ class ColorSensing():
         global chosenColor
         global start
         global pos
+        global start_pick_up
         
         self.last_x, self.last_y = self.world_x, self.world_y
         distance = math.sqrt(pow(self.world_x - self.last_x, 2) + pow(self.world_y - self.last_y, 2)) #Compare the last coordinates to determine whether to move
@@ -149,13 +148,13 @@ class ColorSensing():
         color = self.main_color()
         self.color_list.append(color)
 
-        if distance < 0.5:
+        if distance < 0.5 and not start_pick_up:
             self.count += 1
             self.center_list.extend((self.world_x, self.world_y))
             if self.start_count_t1:
                 self.start_count_t1 = False
                 self.t1 = time.time()
-            if time.time() - self.t1 > 1:
+            if time.time() - self.t1 > 5:
                 self.rotation_angle = self.rect[2] 
                 self.start_count_t1 = True
                 self.world_X, self.world_Y = np.mean(np.array(self.center_list).reshape(self.count, 2), axis=0)
@@ -163,6 +162,7 @@ class ColorSensing():
                 self.count = 0
                 self.start_pick_up = True
                 pos = [self.world_X, self.world_Y, self.rotation_angle]
+                print("164 setting start ", self.start_pick_up)
                 start = self.start_pick_up
         else:
             self.t1 = time.time()
@@ -205,17 +205,15 @@ class ColorSensing():
     def start(self):
         while True:
             img = self.my_camera.frame
-            second_img = self.second_camera.frame
+            #second_img = self.second_camera.frame
             #print(img.shape)
             
             #frame_gb = cv2.GaussianBlur(frame_resize, (11, 11), 11)
-            if img is not None and second_img is not None:
-                frame_resize = cv2.resize(second_img, self.resolution, interpolation=cv2.INTER_NEAREST)
+            if img is not None:# and second_img is not None:
+                frame_resize = cv2.resize(img, self.resolution, interpolation=cv2.INTER_NEAREST)
                 frame = img.copy()
                 Frame = self.run(frame)           
                 cv2.imshow('Top', Frame)
-
-                cv2.imshow('Bottom', frame_resize)
                 key = cv2.waitKey(1)
                 if key == 27:
                     break
@@ -252,72 +250,6 @@ class ArmMove():
 
         self.unreachable = False 
         atexit.register(self.cleanup)
-
-
-    def colorPalletizing(self):
-        #Get targets from Bus
-        global pos
-        global chosenColor
-        global start
-        global roia
-        global z_r 
-        
-        coordinate = {
-            'red':   (-15 + 0.5, 12 - 0.5, 1.5),
-            'green': (-15 + 0.5, 6 - 0.5,  1.5),
-            'blue':  (-15 + 0.5, 0 - 0.5,  1.5),
-        }
-        
-        while True:    
-            global pos
-            global chosenColor
-            global start
-            global roia
-            global z_r
-            
-            #Get targets from Bus
-            world_X = pos[0]
-            world_Y = pos[1]
-            
-            #Get color from Bus
-            detect_color = chosenColor
-            
-            start_pick_up = start 
-          
-            
-            if detect_color != 'None' and start_pick_up:  
-                self.set_rgb(detect_color)
-                self.setBuzzer(0.1)
-                z = z_r
-                z_r += self.dz
-                if z == 2 * self.dz + coordinate['red'][2]:
-                    z_r = coordinate['red'][2]
-                if z == coordinate['red'][2]:  
-                    move_square = True
-                    time.sleep(3)
-                    move_square = False
-                result = self.AK.setPitchRangeMoving((world_X, world_Y, 7), -90, -90, 0)  
-                if result == False:
-                    unreachable = True
-                else:
-                    unreachable = False
-                    time.sleep(result[2]/1000)
-
-                    self.pickUp()
-                    
-                    self.dropOffStack(z)
-
-                    self.initMove() 
-                    time.sleep(1.5)
-
-                    detect_color = 'None'
-                    get_roi = False
-                    roia = get_roi
-                    start_pick_up = False
-                    start = start_pick_up
-                    chosenColor = detect_color
-                    self.set_rgb(detect_color)
-
 
     #Picks up the cube
     def pickUp(self):
@@ -367,37 +299,14 @@ class ArmMove():
         self.AK.setPitchRangeMoving((coordinate[detect_color][0], coordinate[detect_color][1], 12), -90, -90, 0, 800)
         time.sleep(0.8)
    
-    #Drop Off in Stack
-    def dropOffStack(self, z):
-        global chosenColor
-        detect_color = chosenColor
-        
-        self.AK.setPitchRangeMoving((coordinate[detect_color][0], coordinate[detect_color][1], 12), -90, -90, 0, 1500) 
-        time.sleep(1.5)
-                            
-        servo2_angle = getAngle(coordinate[detect_color][0], coordinate[detect_color][1], -90)
-        Board.setBusServoPulse(2, servo2_angle, 500)
-        time.sleep(0.5)
-
-        self.AK.setPitchRangeMoving((coordinate[detect_color][0], coordinate[detect_color][1], z + 3), -90, -90, 0, 500)
-        time.sleep(0.5)
-                        
-        self.AK.setPitchRangeMoving((coordinate[detect_color][0], coordinate[detect_color][1], z), -90, -90, 0, 1000)
-        time.sleep(0.8)
-
-        Board.setBusServoPulse(1, self.servo1 - 200, 500)  
-        time.sleep(1)
-
-        self.AK.setPitchRangeMoving((coordinate[detect_color][0], coordinate[detect_color][1], 12), -90, -90, 0, 800)
-        time.sleep(0.8)
-
-    #Runs color sorting code
+   #Runs color sorting code
     def colorSort(self):
         #Get targets from Bus
         global pos
         global chosenColor
         global start
         global roia
+        global start_pick_up
         
         coordinate = {
             'red':   (-15 + 0.5, 12 - 0.5, 1.5),
@@ -410,6 +319,7 @@ class ArmMove():
             global chosenColor
             global start
             global roia
+            global start_pick_up
             #Get targets from Bus
             world_X = pos[0]
             world_Y = pos[1]
@@ -418,17 +328,20 @@ class ArmMove():
             #Get color from Bus
             detect_color = chosenColor
             
-            start_pick_up = start 
-            print(chosenColor,start)
-            if detect_color != 'None' and start_pick_up:  #If it detects that the block has not moved for a while, start gripping 
+            #start_pick_up = start
+            if detect_color != 'None' and start:  #If it detects that the block has not moved for a while, start gripping 
                 #If no runtime parameter is given, it is automatically calculated and returned by the result
                 self.set_rgb(detect_color)
-                self.setBuzzer(0.1)
                 result = self.AK.setPitchRangeMoving((world_X, world_Y, 7), -90, -90, 0)  
                 if result == False:
                     self.unreachable = True
                 else:
                     self.unreachable = False
+                    get_roi = False
+                    roia = get_roi
+                    print("431 setting start False", start)
+                    start_pick_up = True
+                    
                     time.sleep(result[2]/1000) #If the specified location can be reached, get the running time
 
                     self.pickUp()
@@ -440,10 +353,8 @@ class ArmMove():
                     time.sleep(1.5)
 
                     detect_color = 'None'
-                    get_roi = False
-                    roia = get_roi
+                    start = False
                     start_pick_up = False
-                    start = start_pick_up
                     chosenColor = detect_color
                     self.set_rgb(detect_color)
             
@@ -462,14 +373,7 @@ class ArmMove():
         time.sleep(1.5)
     #time.sleep(0.01)
     
-    def setBuzzer(self, timer):
-        Board.setBuzzer(0)
-        Board.setBuzzer(1)
-        time.sleep(timer)
-        Board.setBuzzer(0)
-    
     def set_rgb(self, color):
-        print("started fuction? ")
         if color == "red":
             Board.RGB.setPixelColor(0, Board.PixelColor(255, 0, 0))
             Board.RGB.setPixelColor(1, Board.PixelColor(255, 0, 0))
